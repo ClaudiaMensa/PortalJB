@@ -1,0 +1,621 @@
+import React, { useState, useMemo } from 'react';
+import { 
+  Map, 
+  Users, 
+  Calendar, 
+  ChevronRight, 
+  BarChart, 
+  Award, 
+  BookOpen, 
+  MapPin,
+  Menu,
+  X,
+  FileText,
+  Download,
+  Shield,
+  Heart,
+  CheckCircle
+} from 'lucide-react';
+import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+
+// --- MOCK DATA & CONFIGURATION ---
+
+// Cores atualizadas para o padrão Mensa Brasil (Verde Institucional, Branco, Cinza)
+const THEME = {
+  primary: '#006633', // Mensa Brasil Green
+  secondary: '#f4f4f4',
+  accent: '#D4AF37', // Gold touch
+  text: '#333333',
+  textLight: '#ffffff'
+};
+
+// Dados dos Eventos 2026
+const EVENTS_2026 = [
+  { id: 1, date: '2026-02-15', title: 'Encontro Nacional de Jovens Talentos', region: 'Sudeste', city: 'São Paulo, SP', type: 'Presencial' },
+  { id: 9, date: '2026-03-14', title: 'Encontro Científico', region: 'Sudeste', city: 'São Carlos, SP', type: 'Presencial' },
+  { id: 2, date: '2026-04-10', title: 'Workshop: Desafios da Superdotação', region: 'Sul', city: 'Curitiba, PR', type: 'Híbrido' },
+  { id: 7, date: '2026-04-24', title: 'Annual Gathering 2026', region: 'Nacional', city: 'A Definir', type: 'Presencial' },
+  { id: 3, date: '2026-06-20', title: 'Olimpíada de Lógica Mensa', region: 'Nacional', city: 'Online', type: 'Virtual' },
+  { id: 4, date: '2026-08-12', title: 'Simpósio de Educação Inclusiva', region: 'Nordeste', city: 'Recife, PE', type: 'Presencial' },
+  { id: 8, date: '2026-09-06', title: 'Agzinho: Encontro de Jovens (6 e 7/Set)', region: 'Nacional', city: 'São Paulo, SP', type: 'Presencial' },
+  { id: 5, date: '2026-10-05', title: 'Camp de Robótica e IA', region: 'Centro-Oeste', city: 'Brasília, DF', type: 'Presencial' },
+  { id: 6, date: '2026-11-15', title: 'Encontro de Famílias Mensa', region: 'Norte', city: 'Manaus, AM', type: 'Presencial' },
+];
+
+// Dados demográficos e Coordenadores (Mock)
+const BRAZIL_DATA = {
+  "SP": {
+    name: "São Paulo",
+    region: "Sudeste",
+    coordinator: "Dr. Ricardo Silva",
+    email: "coord.sp@mensa.br",
+    total: 450,
+    cities: [
+      { name: "São Paulo", count: 200 },
+      { name: "Campinas", count: 80 },
+      { name: "São José dos Campos", count: 45 },
+      { name: "Santos", count: 30 },
+      { name: "Outras", count: 95 }
+    ],
+    ages: [
+      { name: '4-7 anos', value: 50 },
+      { name: '8-12 anos', value: 180 },
+      { name: '13-17 anos', value: 220 }
+    ]
+  },
+  "RJ": {
+    name: "Rio de Janeiro",
+    region: "Sudeste",
+    coordinator: "Profa. Ana Clara",
+    email: "coord.rj@mensa.br",
+    total: 320,
+    cities: [
+      { name: "Rio de Janeiro", count: 180 },
+      { name: "Niterói", count: 60 },
+      { name: "Petrópolis", count: 25 },
+      { name: "Outras", count: 55 }
+    ],
+    ages: [
+      { name: '4-7 anos', value: 40 },
+      { name: '8-12 anos', value: 120 },
+      { name: '13-17 anos', value: 160 }
+    ]
+  },
+  "MG": {
+    name: "Minas Gerais",
+    region: "Sudeste",
+    coordinator: "Roberto Mendes",
+    email: "coord.mg@mensa.br",
+    total: 210,
+    cities: [
+      { name: "Belo Horizonte", count: 110 },
+      { name: "Uberlândia", count: 40 },
+      { name: "Outras", count: 60 }
+    ],
+    ages: [
+      { name: '4-7 anos', value: 30 },
+      { name: '8-12 anos', value: 80 },
+      { name: '13-17 anos', value: 100 }
+    ]
+  },
+  "RS": {
+    name: "Rio Grande do Sul",
+    region: "Sul",
+    coordinator: "Julia Fontes",
+    email: "coord.rs@mensa.br",
+    total: 180,
+    cities: [{ name: "Porto Alegre", count: 90 }, { name: "Caxias do Sul", count: 30 }, { name: "Outras", count: 60 }],
+    ages: [{ name: '4-7 anos', value: 20 }, { name: '8-12 anos', value: 70 }, { name: '13-17 anos', value: 90 }]
+  },
+  "BA": {
+    name: "Bahia",
+    region: "Nordeste",
+    coordinator: "Carlos Axé",
+    email: "coord.ba@mensa.br",
+    total: 150,
+    cities: [{ name: "Salvador", count: 90 }, { name: "Feira de Santana", count: 20 }, { name: "Outras", count: 40 }],
+    ages: [{ name: '4-7 anos', value: 15 }, { name: '8-12 anos', value: 60 }, { name: '13-17 anos', value: 75 }]
+  },
+  "DF": {
+    name: "Distrito Federal",
+    region: "Centro-Oeste",
+    coordinator: "Mariana Planalto",
+    email: "coord.df@mensa.br",
+    total: 120,
+    cities: [{ name: "Brasília", count: 120 }],
+    ages: [{ name: '4-7 anos', value: 20 }, { name: '8-12 anos', value: 50 }, { name: '13-17 anos', value: 50 }]
+  },
+  "DEFAULT": {
+    name: "Outros Estados",
+    region: "Variada",
+    coordinator: "Coordenação Nacional",
+    email: "jovens@mensa.br",
+    total: 45,
+    cities: [{ name: "Capital", count: 25 }, { name: "Interior", count: 20 }],
+    ages: [{ name: '4-7 anos', value: 5 }, { name: '8-12 anos', value: 20 }, { name: '13-17 anos', value: 20 }]
+  }
+};
+
+// --- COMPONENTS ---
+
+const Header = () => (
+  <header className="bg-[#006633] text-white shadow-lg sticky top-0 z-50">
+    <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+      <div className="flex items-center gap-3">
+        {/* Logo removido conforme solicitado */}
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight font-serif">Mensa Brasil</h1>
+          <p className="text-xs uppercase tracking-widest text-yellow-400">Jovens Brilhantes</p>
+        </div>
+      </div>
+      <nav className="hidden md:flex gap-6 text-sm font-medium">
+        <a href="#inicio" className="hover:text-yellow-400 transition">Início</a>
+        <a href="#sobre" className="hover:text-yellow-400 transition">O Movimento</a>
+        <a href="#dashboard" className="hover:text-yellow-400 transition">Mapa & Dados</a>
+        <a href="#manuais" className="hover:text-yellow-400 transition">Manuais</a>
+        <a href="#eventos" className="hover:text-yellow-400 transition">Agenda 2026</a>
+      </nav>
+      <button className="md:hidden text-white">
+        <Menu size={24} />
+      </button>
+    </div>
+  </header>
+);
+
+const Hero = () => (
+  <section id="inicio" className="relative bg-[#f4f4f4] overflow-hidden">
+    <div className="absolute inset-0 bg-gradient-to-r from-[#006633] to-[#004d26] opacity-90" />
+    <div className="relative container mx-auto px-4 py-24 flex flex-col md:flex-row items-center">
+      <div className="md:w-1/2 text-white space-y-6">
+        <h2 className="text-4xl md:text-6xl font-serif font-bold leading-tight">
+          Identificar, Apoiar e Conectar
+        </h2>
+        <p className="text-lg md:text-xl text-gray-200 max-w-lg">
+          O programa Jovens Brilhantes dedica-se a criar um ambiente de estímulo intelectual e acolhimento social para jovens de alto potencial em todo o Brasil.
+        </p>
+        <button className="bg-white text-[#006633] px-8 py-3 rounded font-bold hover:bg-yellow-400 transition shadow-lg">
+          Saiba como participar
+        </button>
+      </div>
+      <div className="md:w-1/2 mt-10 md:mt-0 flex justify-center">
+         {/* Ilustração abstrata de conexões */}
+         <div className="relative w-80 h-80">
+            <div className="absolute inset-0 bg-yellow-500 rounded-full opacity-20 animate-pulse"></div>
+            <div className="absolute inset-4 bg-white rounded-full flex items-center justify-center shadow-2xl">
+               <Users size={80} className="text-[#006633]" />
+            </div>
+            <div className="absolute -top-4 -right-4 bg-white p-4 rounded-lg shadow-xl">
+               <p className="text-[#006633] font-bold text-2xl">2.5k+</p>
+               <p className="text-gray-500 text-xs">Jovens Identificados</p>
+            </div>
+         </div>
+      </div>
+    </div>
+  </section>
+);
+
+const InteractiveDashboard = () => {
+  const [selectedState, setSelectedState] = useState(null);
+
+  const getData = (uf) => BRAZIL_DATA[uf] || { ...BRAZIL_DATA["DEFAULT"], name: uf };
+
+  const activeData = useMemo(() => {
+    if (!selectedState) {
+        const totalJovens = Object.values(BRAZIL_DATA).reduce((acc, curr) => acc + curr.total, 0);
+        return {
+            name: "Brasil (Nacional)",
+            total: totalJovens,
+            coordinator: "Coordenação Nacional",
+            cities: [],
+            ages: [
+                { name: '4-7 anos', value: 350 },
+                { name: '8-12 anos', value: 850 },
+                { name: '13-17 anos', value: 900 }
+            ]
+        };
+    }
+    return getData(selectedState);
+  }, [selectedState]);
+
+  const StateButton = ({ uf }) => (
+    <button 
+      onClick={() => setSelectedState(uf)}
+      className={`
+        w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-lg font-bold transition-all duration-300 border-2
+        ${selectedState === uf 
+          ? 'bg-[#006633] text-white border-yellow-400 transform scale-110 shadow-xl z-10' 
+          : 'bg-white text-gray-600 border-gray-200 hover:border-[#006633] hover:bg-green-50'}
+      `}
+    >
+      {uf}
+    </button>
+  );
+
+  return (
+    <section id="dashboard" className="py-16 bg-gray-50">
+      <div className="container mx-auto px-4">
+        <div className="mb-10 text-center">
+          <h2 className="text-3xl font-bold text-[#006633] mb-4">Mapa da Inteligência</h2>
+          <p className="text-gray-600 max-w-2xl mx-auto">
+            Explore a distribuição dos Jovens Brilhantes pelo Brasil. Selecione um estado no mapa esquemático para visualizar os coordenadores regionais e estatísticas detalhadas.
+          </p>
+        </div>
+
+        <div className="grid lg:grid-cols-12 gap-8">
+          
+          <div className="lg:col-span-7 bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+            <div className="flex justify-between items-center mb-6">
+                <h3 className="font-bold text-lg flex items-center gap-2 text-[#006633]">
+                    <MapPin size={20} /> Selecione a Região
+                </h3>
+                {selectedState && (
+                    <button onClick={() => setSelectedState(null)} className="text-sm text-red-500 hover:underline flex items-center">
+                        <X size={14} className="mr-1"/> Limpar Seleção
+                    </button>
+                )}
+            </div>
+
+            <div className="grid grid-cols-6 gap-2 md:gap-4 max-w-md mx-auto select-none">
+                {/* Norte */}
+                <div className="col-span-6 text-center text-xs text-gray-400 font-semibold uppercase tracking-wider mb-1">Norte</div>
+                <div className="col-start-2"><StateButton uf="RR" /></div>
+                <div className="col-start-3"><StateButton uf="AP" /></div>
+                <div className="col-start-1 row-start-3"><StateButton uf="AC" /></div>
+                <div className="col-start-2 row-start-3"><StateButton uf="AM" /></div>
+                <div className="col-start-3 row-start-3"><StateButton uf="PA" /></div>
+                <div className="col-start-4 row-start-3"><StateButton uf="TO" /></div>
+                <div className="col-start-3 row-start-4"><StateButton uf="RO" /></div>
+
+                {/* Nordeste */}
+                <div className="col-span-6 text-center text-xs text-gray-400 font-semibold uppercase tracking-wider mt-4 mb-1">Nordeste</div>
+                <div className="col-start-4 row-start-2"><StateButton uf="MA" /></div>
+                <div className="col-start-5 row-start-2"><StateButton uf="PI" /></div>
+                <div className="col-start-6 row-start-2"><StateButton uf="CE" /></div>
+                <div className="col-start-6 row-start-3"><StateButton uf="RN" /></div>
+                <div className="col-start-6 row-start-4"><StateButton uf="PB" /></div>
+                <div className="col-start-6 row-start-5"><StateButton uf="PE" /></div>
+                <div className="col-start-5 row-start-5"><StateButton uf="AL" /></div>
+                <div className="col-start-5 row-start-6"><StateButton uf="SE" /></div>
+                <div className="col-start-5 row-start-4"><StateButton uf="BA" /></div>
+
+                {/* Centro-Oeste */}
+                <div className="col-span-6 text-center text-xs text-gray-400 font-semibold uppercase tracking-wider mt-4 mb-1">Centro-Oeste</div>
+                <div className="col-start-3 row-start-5"><StateButton uf="MT" /></div>
+                <div className="col-start-4 row-start-5"><StateButton uf="GO" /></div>
+                <div className="col-start-4 row-start-4"><StateButton uf="DF" /></div>
+                <div className="col-start-3 row-start-6"><StateButton uf="MS" /></div>
+
+                {/* Sudeste */}
+                <div className="col-span-6 text-center text-xs text-gray-400 font-semibold uppercase tracking-wider mt-4 mb-1">Sudeste</div>
+                <div className="col-start-4 row-start-6"><StateButton uf="MG" /></div>
+                <div className="col-start-5 row-start-7"><StateButton uf="ES" /></div>
+                <div className="col-start-4 row-start-7"><StateButton uf="RJ" /></div>
+                <div className="col-start-3 row-start-7"><StateButton uf="SP" /></div>
+
+                {/* Sul */}
+                <div className="col-span-6 text-center text-xs text-gray-400 font-semibold uppercase tracking-wider mt-4 mb-1">Sul</div>
+                <div className="col-start-3 row-start-8"><StateButton uf="PR" /></div>
+                <div className="col-start-3 row-start-9"><StateButton uf="SC" /></div>
+                <div className="col-start-2 row-start-9"><StateButton uf="RS" /></div>
+            </div>
+          </div>
+
+          <div className="lg:col-span-5 space-y-6">
+            
+            <div className="bg-white p-6 rounded-2xl shadow-lg border-t-4 border-[#006633]">
+                <div className="flex justify-between items-start">
+                    <div>
+                        <h4 className="text-sm text-gray-500 uppercase tracking-wide">Localização</h4>
+                        <h2 className="text-3xl font-bold text-[#006633]">{activeData.name}</h2>
+                    </div>
+                    <div className="text-right">
+                        <h4 className="text-sm text-gray-500 uppercase tracking-wide">Total Jovens</h4>
+                        <div className="text-4xl font-bold text-yellow-500">{activeData.total}</div>
+                    </div>
+                </div>
+
+                <div className="mt-6 p-4 bg-green-50 rounded-lg flex items-start gap-4">
+                    <div className="bg-[#006633] p-2 rounded-full text-white">
+                        <Users size={20} />
+                    </div>
+                    <div>
+                        <p className="text-xs text-gray-500 uppercase font-bold">Coordenador Regional</p>
+                        <p className="font-semibold text-[#006633] text-lg">{activeData.coordinator}</p>
+                        <p className="text-sm text-gray-600">{activeData.email || "Contato indisponível"}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                <h4 className="font-bold text-[#006633] mb-4 flex items-center gap-2">
+                    <BarChart size={18} /> Distribuição por Idade
+                </h4>
+                <div className="h-48 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <RechartsBarChart data={activeData.ages} layout="vertical" margin={{ left: 20 }}>
+                            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
+                            <XAxis type="number" hide />
+                            <YAxis dataKey="name" type="category" width={70} tick={{fontSize: 12}} />
+                            <Tooltip 
+                                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} 
+                            />
+                            <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                                {activeData.ages.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#006633' : '#D4AF37'} />
+                                ))}
+                            </Bar>
+                        </RechartsBarChart>
+                    </ResponsiveContainer>
+                </div>
+            </div>
+
+            {activeData.cities.length > 0 && (
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h4 className="font-bold text-[#006633] mb-4 flex items-center gap-2">
+                        <Map size={18} /> Principais Cidades
+                    </h4>
+                    <div className="space-y-3">
+                        {activeData.cities.map((city, idx) => (
+                            <div key={idx} className="flex justify-between items-center border-b border-gray-50 pb-2 last:border-0">
+                                <span className="text-gray-700">{city.name}</span>
+                                <span className="font-bold text-[#006633] bg-green-50 px-2 py-1 rounded text-sm">
+                                    {city.count}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+const ResourcesSection = () => (
+  <section id="manuais" className="py-16 bg-[#f8fafc]">
+    <div className="container mx-auto px-4">
+      <div className="text-center mb-12">
+        <h2 className="text-3xl font-bold text-[#006633] mb-4">Recursos e Manuais</h2>
+        <p className="text-gray-600 max-w-2xl mx-auto">
+          Documentação oficial e guias práticos para apoiar nossos coordenadores e voluntários na missão de identificar e conectar jovens brilhantes.
+        </p>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+        {/* MANUAL DO COORDENADOR */}
+        <div className="bg-[#006633] text-white rounded-2xl overflow-hidden shadow-xl relative">
+          <div className="absolute top-0 right-0 p-4 opacity-10">
+            <Shield size={120} />
+          </div>
+          <div className="p-8 relative z-10">
+            <div className="bg-yellow-500 w-12 h-12 rounded-lg flex items-center justify-center mb-6 text-[#006633]">
+              <Shield size={24} />
+            </div>
+            <h3 className="text-2xl font-bold mb-2 font-serif">Manual do Coordenador</h3>
+            <p className="text-green-100 mb-6 leading-relaxed">
+              Guia completo para gestão regional, organização de SIGs (Special Interest Groups) e protocolos institucionais da Mensa Brasil.
+            </p>
+            
+            <ul className="space-y-3 mb-8 text-sm text-green-50">
+              <li className="flex items-start gap-2">
+                <CheckCircle size={16} className="mt-1 text-yellow-400" />
+                <span>Diretrizes para oficialização de encontros</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle size={16} className="mt-1 text-yellow-400" />
+                <span>Processo de submissão de relatórios mensais</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle size={16} className="mt-1 text-yellow-400" />
+                <span>Gestão de conflitos e ética na liderança</span>
+              </li>
+            </ul>
+
+            <button className="w-full bg-white text-[#006633] font-bold py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-green-50 transition shadow-lg">
+              <Download size={18} /> Baixar PDF (v2025.1)
+            </button>
+            
+            <div className="mt-4 text-center">
+                <a href="#" className="text-xs text-green-200 hover:text-white underline opacity-80">
+                   Acessar Portal Administrativo →
+                </a>
+            </div>
+          </div>
+        </div>
+
+        {/* MANUAL DO VOLUNTÁRIO */}
+        <div className="bg-white text-gray-800 rounded-2xl overflow-hidden shadow-lg border border-gray-200 relative group">
+          <div className="absolute top-0 right-0 p-4 opacity-5 text-[#006633] group-hover:opacity-10 transition">
+            <Heart size={120} />
+          </div>
+          <div className="p-8 relative z-10">
+            <div className="bg-green-50 w-12 h-12 rounded-lg flex items-center justify-center mb-6 text-[#006633]">
+              <Heart size={24} />
+            </div>
+            <h3 className="text-2xl font-bold mb-2 font-serif text-[#006633]">Manual do Voluntário</h3>
+            <p className="text-gray-600 mb-6 leading-relaxed">
+              Tudo o que você precisa saber para apoiar nossos eventos e programas de mentoria. Junte-se a nós para fazer a diferença.
+            </p>
+            
+            <ul className="space-y-3 mb-8 text-sm text-gray-600">
+              <li className="flex items-start gap-2">
+                <CheckCircle size={16} className="mt-1 text-[#006633]" />
+                <span>Código de Conduta e Proteção ao Menor</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle size={16} className="mt-1 text-[#006633]" />
+                <span>Checklist para apoio em eventos presenciais</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle size={16} className="mt-1 text-[#006633]" />
+                <span>Dicas para acolhimento de novos membros</span>
+              </li>
+            </ul>
+
+            <button className="w-full bg-[#006633] text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-green-900 transition shadow-lg">
+              <Download size={18} /> Baixar Guia do Voluntário
+            </button>
+            
+            <div className="mt-4 text-center">
+                <a href="#" className="text-xs text-gray-500 hover:text-[#006633] underline">
+                   Quero me tornar um voluntário →
+                </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+);
+
+const EventsSection = () => (
+  <section id="eventos" className="py-16 bg-white">
+    <div className="container mx-auto px-4">
+      <div className="flex flex-col md:flex-row justify-between items-end mb-10 border-b-2 border-[#006633] pb-4">
+        <div>
+            <h2 className="text-3xl font-bold text-[#006633]">Agenda 2026</h2>
+            <p className="text-gray-600 mt-2">Eventos regionais e nacionais para integração e desenvolvimento.</p>
+        </div>
+        <div className="mt-4 md:mt-0">
+            <button className="text-[#006633] font-bold flex items-center gap-2 hover:gap-3 transition-all">
+                Ver calendário completo <ChevronRight size={20} />
+            </button>
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {EVENTS_2026.map(evt => (
+            <div key={evt.id} className="group bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-xl transition duration-300">
+                <div className="bg-[#006633] text-white p-4 flex justify-between items-center">
+                    <div className="flex flex-col">
+                        <span className="text-xs uppercase opacity-80">{evt.region}</span>
+                        <span className="font-bold text-lg">{new Date(evt.date).toLocaleDateString('pt-BR', { month: 'short', day: 'numeric' })}</span>
+                    </div>
+                    <Calendar className="opacity-50 group-hover:opacity-100 transition" />
+                </div>
+                <div className="p-6">
+                    <span className={`text-xs font-bold px-2 py-1 rounded uppercase tracking-wide mb-3 inline-block
+                        ${evt.type === 'Presencial' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'}
+                    `}>
+                        {evt.type}
+                    </span>
+                    <h3 className="text-xl font-bold text-gray-800 mb-2 group-hover:text-[#006633] transition">
+                        {evt.title}
+                    </h3>
+                    <p className="text-gray-500 text-sm flex items-center gap-2">
+                        <MapPin size={14} /> {evt.city}
+                    </p>
+                    <div className="mt-6 pt-4 border-t border-gray-100">
+                        <button className="w-full py-2 text-center border border-[#006633] text-[#006633] rounded font-semibold hover:bg-[#006633] hover:text-white transition">
+                            Inscrever-se
+                        </button>
+                    </div>
+                </div>
+            </div>
+        ))}
+      </div>
+    </div>
+  </section>
+);
+
+const AboutSection = () => (
+    <section id="sobre" className="py-16 bg-gray-50">
+        <div className="container mx-auto px-4">
+            <div className="max-w-4xl mx-auto text-center mb-12">
+                <h2 className="text-3xl font-bold text-[#006633] mb-6">Sobre o Programa</h2>
+                <p className="text-lg text-gray-700 leading-relaxed">
+                    Baseado nas diretrizes da Mensa Internacional e adaptado à realidade brasileira, 
+                    o programa busca não apenas identificar, mas nutrir o intelecto através de uma rede de apoio robusta.
+                </p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-8">
+                <div className="bg-white p-8 rounded-xl shadow-sm text-center">
+                    <div className="w-16 h-16 bg-green-100 text-[#006633] rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Award size={32} />
+                    </div>
+                    <h3 className="font-bold text-xl mb-2 text-[#006633]">Identificação</h3>
+                    <p className="text-gray-600 text-sm">
+                        Testes supervisionados e avaliações psicológicas para identificar altas habilidades e superdotação em diferentes faixas etárias.
+                    </p>
+                </div>
+                <div className="bg-white p-8 rounded-xl shadow-sm text-center">
+                    <div className="w-16 h-16 bg-green-100 text-[#006633] rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Users size={32} />
+                    </div>
+                    <h3 className="font-bold text-xl mb-2 text-[#006633]">Integração</h3>
+                    <p className="text-gray-600 text-sm">
+                        Encontros regionais (SIGs) que permitem a troca de experiências entre jovens com interesses similares, reduzindo o isolamento social.
+                    </p>
+                </div>
+                <div className="bg-white p-8 rounded-xl shadow-sm text-center">
+                    <div className="w-16 h-16 bg-green-100 text-[#006633] rounded-full flex items-center justify-center mx-auto mb-4">
+                        <BookOpen size={32} />
+                    </div>
+                    <h3 className="font-bold text-xl mb-2 text-[#006633]">Apoio Familiar</h3>
+                    <p className="text-gray-600 text-sm">
+                        Suporte e orientação para pais e educadores sobre como lidar com as necessidades educacionais e emocionais específicas.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+);
+
+const Footer = () => (
+  <footer className="bg-[#006633] text-white py-12 border-t border-yellow-500">
+    <div className="container mx-auto px-4">
+      <div className="grid md:grid-cols-4 gap-8">
+        <div className="col-span-1 md:col-span-2">
+            <h2 className="text-2xl font-serif font-bold mb-4">Mensa Brasil</h2>
+            <p className="text-gray-300 text-sm max-w-md leading-relaxed">
+                A Mensa é a High IQ Society, uma organização internacional para pessoas com alto quociente de inteligência. 
+                O programa Jovens Brilhantes é uma iniciativa dedicada ao futuro.
+            </p>
+        </div>
+        <div>
+            <h3 className="font-bold text-yellow-400 mb-4">Links Rápidos</h3>
+            <ul className="space-y-2 text-sm text-gray-300">
+                <li><a href="#" className="hover:text-white transition">Como ingressar</a></li>
+                <li><a href="#" className="hover:text-white transition">Área do Associado</a></li>
+                <li><a href="#" className="hover:text-white transition">Revista Mensa</a></li>
+                <li><a href="#" className="hover:text-white transition">Política de Privacidade</a></li>
+            </ul>
+        </div>
+        <div>
+            <h3 className="font-bold text-yellow-400 mb-4">Contato</h3>
+            <p className="text-gray-300 text-sm mb-2">jovens@mensa.org.br</p>
+            <p className="text-gray-300 text-sm">São Paulo, SP - Brasil</p>
+            <div className="mt-4 flex gap-4">
+                {/* Social Placeholders */}
+                <div className="w-8 h-8 bg-white/10 rounded hover:bg-white/20 cursor-pointer"></div>
+                <div className="w-8 h-8 bg-white/10 rounded hover:bg-white/20 cursor-pointer"></div>
+                <div className="w-8 h-8 bg-white/10 rounded hover:bg-white/20 cursor-pointer"></div>
+            </div>
+        </div>
+      </div>
+      <div className="mt-12 pt-8 border-t border-white/10 text-center text-xs text-gray-400">
+        © 2025 Mensa Brasil. Todos os direitos reservados. Design inspirado no padrão oficial.
+      </div>
+    </div>
+  </footer>
+);
+
+const App = () => {
+  return (
+    <div className="min-h-screen bg-white font-sans text-gray-800 scroll-smooth">
+      <Header />
+      <Hero />
+      <AboutSection />
+      <InteractiveDashboard />
+      <ResourcesSection />
+      <EventsSection />
+      <Footer />
+    </div>
+  );
+};
+
+export default App;
