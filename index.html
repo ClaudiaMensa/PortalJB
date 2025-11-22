@@ -5,7 +5,474 @@ import {
   Calendar, 
   ChevronRight, 
   BarChart, 
-  Award, 
+  Award, <!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mensa Brasil - Jovens Brilhantes</title>
+    
+    <!-- Tailwind CSS (Estilos) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonte Noto Serif e Sans (Estilo Mensa) -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@400;700&family=Noto+Sans:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Noto Sans', sans-serif; }
+        h1, h2, h3, h4 { font-family: 'Noto Serif', serif; }
+    </style>
+
+    <!-- IMPORT MAP: Corrige o erro de resolução de módulos -->
+    <script type="importmap">
+    {
+        "imports": {
+            "react": "https://esm.sh/react@18.2.0",
+            "react-dom": "https://esm.sh/react-dom@18.2.0",
+            "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+            "lucide-react": "https://esm.sh/lucide-react@0.263.1",
+            "recharts": "https://esm.sh/recharts@2.12.0?external=react,react-dom"
+        }
+    }
+    </script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <!-- Script Tipo Módulo -->
+    <script type="module">
+        // Agora podemos importar usando os nomes definidos no Import Map
+        import React, { useState, useMemo } from 'react';
+        import ReactDOM from 'react-dom/client';
+        
+        import { 
+            Map, Users, Calendar, ChevronRight, BarChart2, 
+            Award, BookOpen, MapPin, Menu, X, FileText, 
+            Download, Shield, Heart, CheckCircle 
+        } from 'lucide-react';
+
+        import { 
+            BarChart as RechartsBarChart, Bar, XAxis, YAxis, 
+            CartesianGrid, Tooltip, ResponsiveContainer, Cell 
+        } from 'recharts';
+
+        // --- DADOS E CONFIGURAÇÃO ---
+        
+        const THEME = {
+            primary: '#006633', 
+            secondary: '#f4f4f4',
+            accent: '#D4AF37',
+            text: '#333333',
+            textLight: '#ffffff'
+        };
+
+        const EVENTS_2026 = [
+            { id: 1, date: '2026-02-15', title: 'Encontro Nacional de Jovens Talentos', region: 'Sudeste', city: 'São Paulo, SP', type: 'Presencial' },
+            { id: 9, date: '2026-03-14', title: 'Encontro Científico', region: 'Sudeste', city: 'São Carlos, SP', type: 'Presencial' },
+            { id: 2, date: '2026-04-10', title: 'Workshop: Desafios da Superdotação', region: 'Sul', city: 'Curitiba, PR', type: 'Híbrido' },
+            { id: 7, date: '2026-04-24', title: 'Annual Gathering 2026', region: 'Nacional', city: 'A Definir', type: 'Presencial' },
+            { id: 3, date: '2026-06-20', title: 'Olimpíada de Lógica Mensa', region: 'Nacional', city: 'Online', type: 'Virtual' },
+            { id: 4, date: '2026-08-12', title: 'Simpósio de Educação Inclusiva', region: 'Nordeste', city: 'Recife, PE', type: 'Presencial' },
+            { id: 8, date: '2026-09-06', title: 'Agzinho: Encontro de Jovens (6 e 7/Set)', region: 'Nacional', city: 'São Paulo, SP', type: 'Presencial' },
+            { id: 5, date: '2026-10-05', title: 'Camp de Robótica e IA', region: 'Centro-Oeste', city: 'Brasília, DF', type: 'Presencial' },
+            { id: 6, date: '2026-11-15', title: 'Encontro de Famílias Mensa', region: 'Norte', city: 'Manaus, AM', type: 'Presencial' },
+        ];
+
+        const BRAZIL_DATA = {
+            "SP": {
+                name: "São Paulo", region: "Sudeste", coordinator: "Dr. Ricardo Silva", email: "coord.sp@mensa.br", total: 450,
+                cities: [{ name: "São Paulo", count: 200 }, { name: "Campinas", count: 80 }, { name: "São José dos Campos", count: 45 }, { name: "Santos", count: 30 }, { name: "Outras", count: 95 }],
+                ages: [{ name: '4-7 anos', value: 50 }, { name: '8-12 anos', value: 180 }, { name: '13-17 anos', value: 220 }]
+            },
+            "RJ": {
+                name: "Rio de Janeiro", region: "Sudeste", coordinator: "Profa. Ana Clara", email: "coord.rj@mensa.br", total: 320,
+                cities: [{ name: "Rio de Janeiro", count: 180 }, { name: "Niterói", count: 60 }, { name: "Petrópolis", count: 25 }, { name: "Outras", count: 55 }],
+                ages: [{ name: '4-7 anos', value: 40 }, { name: '8-12 anos', value: 120 }, { name: '13-17 anos', value: 160 }]
+            },
+            "MG": {
+                name: "Minas Gerais", region: "Sudeste", coordinator: "Roberto Mendes", email: "coord.mg@mensa.br", total: 210,
+                cities: [{ name: "Belo Horizonte", count: 110 }, { name: "Uberlândia", count: 40 }, { name: "Outras", count: 60 }],
+                ages: [{ name: '4-7 anos', value: 30 }, { name: '8-12 anos', value: 80 }, { name: '13-17 anos', value: 100 }]
+            },
+            "RS": {
+                name: "Rio Grande do Sul", region: "Sul", coordinator: "Julia Fontes", email: "coord.rs@mensa.br", total: 180,
+                cities: [{ name: "Porto Alegre", count: 90 }, { name: "Caxias do Sul", count: 30 }, { name: "Outras", count: 60 }],
+                ages: [{ name: '4-7 anos', value: 20 }, { name: '8-12 anos', value: 70 }, { name: '13-17 anos', value: 90 }]
+            },
+            "BA": {
+                name: "Bahia", region: "Nordeste", coordinator: "Carlos Axé", email: "coord.ba@mensa.br", total: 150,
+                cities: [{ name: "Salvador", count: 90 }, { name: "Feira de Santana", count: 20 }, { name: "Outras", count: 40 }],
+                ages: [{ name: '4-7 anos', value: 15 }, { name: '8-12 anos', value: 60 }, { name: '13-17 anos', value: 75 }]
+            },
+            "DF": {
+                name: "Distrito Federal", region: "Centro-Oeste", coordinator: "Mariana Planalto", email: "coord.df@mensa.br", total: 120,
+                cities: [{ name: "Brasília", count: 120 }],
+                ages: [{ name: '4-7 anos', value: 20 }, { name: '8-12 anos', value: 50 }, { name: '13-17 anos', value: 50 }]
+            },
+            "DEFAULT": {
+                name: "Outros Estados", region: "Variada", coordinator: "Coordenação Nacional", email: "jovens@mensa.br", total: 45,
+                cities: [{ name: "Capital", count: 25 }, { name: "Interior", count: 20 }],
+                ages: [{ name: '4-7 anos', value: 5 }, { name: '8-12 anos', value: 20 }, { name: '13-17 anos', value: 20 }]
+            }
+        };
+
+        // --- COMPONENTES ---
+
+        const Header = () => {
+            return React.createElement('header', { className: "bg-[#006633] text-white shadow-lg sticky top-0 z-50" },
+                React.createElement('div', { className: "container mx-auto px-4 py-4 flex justify-between items-center" },
+                    React.createElement('div', { className: "flex items-center gap-3" },
+                        React.createElement('div', null,
+                            React.createElement('h1', { className: "text-2xl font-bold tracking-tight font-serif" }, "Mensa Brasil"),
+                            React.createElement('p', { className: "text-xs uppercase tracking-widest text-yellow-400" }, "Jovens Brilhantes")
+                        )
+                    ),
+                    React.createElement('nav', { className: "hidden md:flex gap-6 text-sm font-medium" },
+                        React.createElement('a', { href: "#inicio", className: "hover:text-yellow-400 transition" }, "Início"),
+                        React.createElement('a', { href: "#sobre", className: "hover:text-yellow-400 transition" }, "O Movimento"),
+                        React.createElement('a', { href: "#dashboard", className: "hover:text-yellow-400 transition" }, "Mapa & Dados"),
+                        React.createElement('a', { href: "#manuais", className: "hover:text-yellow-400 transition" }, "Manuais"),
+                        React.createElement('a', { href: "#eventos", className: "hover:text-yellow-400 transition" }, "Agenda 2026")
+                    ),
+                    React.createElement('button', { className: "md:hidden text-white" },
+                        React.createElement(Menu, { size: 24 })
+                    )
+                )
+            );
+        };
+
+        const Hero = () => {
+            return React.createElement('section', { id: "inicio", className: "relative bg-[#f4f4f4] overflow-hidden" },
+                React.createElement('div', { className: "absolute inset-0 bg-gradient-to-r from-[#006633] to-[#004d26] opacity-90" }),
+                React.createElement('div', { className: "relative container mx-auto px-4 py-24 flex flex-col md:flex-row items-center" },
+                    React.createElement('div', { className: "md:w-1/2 text-white space-y-6" },
+                        React.createElement('h2', { className: "text-4xl md:text-6xl font-serif font-bold leading-tight" }, "Identificar, Apoiar e Conectar"),
+                        React.createElement('p', { className: "text-lg md:text-xl text-gray-200 max-w-lg" }, 
+                            "O programa Jovens Brilhantes dedica-se a criar um ambiente de estímulo intelectual e acolhimento social para jovens de alto potencial em todo o Brasil."
+                        ),
+                        React.createElement('button', { className: "bg-white text-[#006633] px-8 py-3 rounded font-bold hover:bg-yellow-400 transition shadow-lg" }, "Saiba como participar")
+                    ),
+                    React.createElement('div', { className: "md:w-1/2 mt-10 md:mt-0 flex justify-center" },
+                        React.createElement('div', { className: "relative w-80 h-80" },
+                            React.createElement('div', { className: "absolute inset-0 bg-yellow-500 rounded-full opacity-20 animate-pulse" }),
+                            React.createElement('div', { className: "absolute inset-4 bg-white rounded-full flex items-center justify-center shadow-2xl" },
+                                React.createElement(Users, { size: 80, className: "text-[#006633]" })
+                            ),
+                            React.createElement('div', { className: "absolute -top-4 -right-4 bg-white p-4 rounded-lg shadow-xl" },
+                                React.createElement('p', { className: "text-[#006633] font-bold text-2xl" }, "2.5k+"),
+                                React.createElement('p', { className: "text-gray-500 text-xs" }, "Jovens Identificados")
+                            )
+                        )
+                    )
+                )
+            );
+        };
+
+        const InteractiveDashboard = () => {
+            const [selectedState, setSelectedState] = useState(null);
+
+            const getData = (uf) => BRAZIL_DATA[uf] || { ...BRAZIL_DATA["DEFAULT"], name: uf };
+
+            const activeData = useMemo(() => {
+                if (!selectedState) {
+                    const totalJovens = Object.values(BRAZIL_DATA).reduce((acc, curr) => acc + curr.total, 0);
+                    return {
+                        name: "Brasil (Nacional)",
+                        total: totalJovens,
+                        coordinator: "Coordenação Nacional",
+                        cities: [],
+                        ages: [
+                            { name: '4-7 anos', value: 350 },
+                            { name: '8-12 anos', value: 850 },
+                            { name: '13-17 anos', value: 900 }
+                        ]
+                    };
+                }
+                return getData(selectedState);
+            }, [selectedState]);
+
+            const StateButton = ({ uf }) => {
+                return React.createElement('button', {
+                    onClick: () => setSelectedState(uf),
+                    className: `w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-lg font-bold transition-all duration-300 border-2 ${
+                        selectedState === uf 
+                        ? 'bg-[#006633] text-white border-yellow-400 transform scale-110 shadow-xl z-10' 
+                        : 'bg-white text-gray-600 border-gray-200 hover:border-[#006633] hover:bg-green-50'
+                    }`
+                }, uf);
+            };
+
+            return React.createElement('section', { id: "dashboard", className: "py-16 bg-gray-50" },
+                React.createElement('div', { className: "container mx-auto px-4" },
+                    React.createElement('div', { className: "mb-10 text-center" },
+                        React.createElement('h2', { className: "text-3xl font-bold text-[#006633] mb-4" }, "Mapa da Inteligência"),
+                        React.createElement('p', { className: "text-gray-600 max-w-2xl mx-auto" }, 
+                            "Explore a distribuição dos Jovens Brilhantes pelo Brasil. Selecione um estado no mapa esquemático para visualizar os coordenadores regionais e estatísticas detalhadas."
+                        )
+                    ),
+                    React.createElement('div', { className: "grid lg:grid-cols-12 gap-8" },
+                        // Coluna Mapa
+                        React.createElement('div', { className: "lg:col-span-7 bg-white p-8 rounded-2xl shadow-sm border border-gray-100" },
+                            React.createElement('div', { className: "flex justify-between items-center mb-6" },
+                                React.createElement('h3', { className: "font-bold text-lg flex items-center gap-2 text-[#006633]" },
+                                    React.createElement(MapPin, { size: 20 }), " Selecione a Região"
+                                ),
+                                selectedState && React.createElement('button', { 
+                                    onClick: () => setSelectedState(null),
+                                    className: "text-sm text-red-500 hover:underline flex items-center"
+                                }, React.createElement(X, { size: 14, className: "mr-1" }), " Limpar Seleção")
+                            ),
+                            // Grid Map Simplificado
+                            React.createElement('div', { className: "grid grid-cols-6 gap-2 md:gap-4 max-w-md mx-auto select-none" },
+                                React.createElement('div', { className: "col-span-6 text-center text-xs text-gray-400 font-semibold uppercase tracking-wider mb-1" }, "Norte"),
+                                React.createElement('div', { className: "col-start-2" }, React.createElement(StateButton, { uf: "RR" })),
+                                React.createElement('div', { className: "col-start-3" }, React.createElement(StateButton, { uf: "AP" })),
+                                React.createElement('div', { className: "col-start-1 row-start-3" }, React.createElement(StateButton, { uf: "AC" })),
+                                React.createElement('div', { className: "col-start-2 row-start-3" }, React.createElement(StateButton, { uf: "AM" })),
+                                React.createElement('div', { className: "col-start-3 row-start-3" }, React.createElement(StateButton, { uf: "PA" })),
+                                React.createElement('div', { className: "col-start-4 row-start-3" }, React.createElement(StateButton, { uf: "TO" })),
+                                React.createElement('div', { className: "col-start-3 row-start-4" }, React.createElement(StateButton, { uf: "RO" })),
+
+                                React.createElement('div', { className: "col-span-6 text-center text-xs text-gray-400 font-semibold uppercase tracking-wider mt-4 mb-1" }, "Nordeste"),
+                                React.createElement('div', { className: "col-start-4 row-start-2" }, React.createElement(StateButton, { uf: "MA" })),
+                                React.createElement('div', { className: "col-start-5 row-start-2" }, React.createElement(StateButton, { uf: "PI" })),
+                                React.createElement('div', { className: "col-start-6 row-start-2" }, React.createElement(StateButton, { uf: "CE" })),
+                                React.createElement('div', { className: "col-start-6 row-start-3" }, React.createElement(StateButton, { uf: "RN" })),
+                                React.createElement('div', { className: "col-start-6 row-start-4" }, React.createElement(StateButton, { uf: "PB" })),
+                                React.createElement('div', { className: "col-start-6 row-start-5" }, React.createElement(StateButton, { uf: "PE" })),
+                                React.createElement('div', { className: "col-start-5 row-start-5" }, React.createElement(StateButton, { uf: "AL" })),
+                                React.createElement('div', { className: "col-start-5 row-start-6" }, React.createElement(StateButton, { uf: "SE" })),
+                                React.createElement('div', { className: "col-start-5 row-start-4" }, React.createElement(StateButton, { uf: "BA" })),
+
+                                React.createElement('div', { className: "col-span-6 text-center text-xs text-gray-400 font-semibold uppercase tracking-wider mt-4 mb-1" }, "Centro-Oeste"),
+                                React.createElement('div', { className: "col-start-3 row-start-5" }, React.createElement(StateButton, { uf: "MT" })),
+                                React.createElement('div', { className: "col-start-4 row-start-5" }, React.createElement(StateButton, { uf: "GO" })),
+                                React.createElement('div', { className: "col-start-4 row-start-4" }, React.createElement(StateButton, { uf: "DF" })),
+                                React.createElement('div', { className: "col-start-3 row-start-6" }, React.createElement(StateButton, { uf: "MS" })),
+
+                                React.createElement('div', { className: "col-span-6 text-center text-xs text-gray-400 font-semibold uppercase tracking-wider mt-4 mb-1" }, "Sudeste"),
+                                React.createElement('div', { className: "col-start-4 row-start-6" }, React.createElement(StateButton, { uf: "MG" })),
+                                React.createElement('div', { className: "col-start-5 row-start-7" }, React.createElement(StateButton, { uf: "ES" })),
+                                React.createElement('div', { className: "col-start-4 row-start-7" }, React.createElement(StateButton, { uf: "RJ" })),
+                                React.createElement('div', { className: "col-start-3 row-start-7" }, React.createElement(StateButton, { uf: "SP" })),
+
+                                React.createElement('div', { className: "col-span-6 text-center text-xs text-gray-400 font-semibold uppercase tracking-wider mt-4 mb-1" }, "Sul"),
+                                React.createElement('div', { className: "col-start-3 row-start-8" }, React.createElement(StateButton, { uf: "PR" })),
+                                React.createElement('div', { className: "col-start-3 row-start-9" }, React.createElement(StateButton, { uf: "SC" })),
+                                React.createElement('div', { className: "col-start-2 row-start-9" }, React.createElement(StateButton, { uf: "RS" }))
+                            )
+                        ),
+                        // Coluna Dados
+                        React.createElement('div', { className: "lg:col-span-5 space-y-6" },
+                            React.createElement('div', { className: "bg-white p-6 rounded-2xl shadow-lg border-t-4 border-[#006633]" },
+                                React.createElement('div', { className: "flex justify-between items-start" },
+                                    React.createElement('div', null,
+                                        React.createElement('h4', { className: "text-sm text-gray-500 uppercase tracking-wide" }, "Localização"),
+                                        React.createElement('h2', { className: "text-3xl font-bold text-[#006633]" }, activeData.name)
+                                    ),
+                                    React.createElement('div', { className: "text-right" },
+                                        React.createElement('h4', { className: "text-sm text-gray-500 uppercase tracking-wide" }, "Total Jovens"),
+                                        React.createElement('div', { className: "text-4xl font-bold text-yellow-500" }, activeData.total)
+                                    )
+                                ),
+                                React.createElement('div', { className: "mt-6 p-4 bg-green-50 rounded-lg flex items-start gap-4" },
+                                    React.createElement('div', { className: "bg-[#006633] p-2 rounded-full text-white" },
+                                        React.createElement(Users, { size: 20 })
+                                    ),
+                                    React.createElement('div', null,
+                                        React.createElement('p', { className: "text-xs text-gray-500 uppercase font-bold" }, "Coordenador Regional"),
+                                        React.createElement('p', { className: "font-semibold text-[#006633] text-lg" }, activeData.coordinator),
+                                        React.createElement('p', { className: "text-sm text-gray-600" }, activeData.email || "Contato indisponível")
+                                    )
+                                )
+                            ),
+                            React.createElement('div', { className: "bg-white p-6 rounded-2xl shadow-sm border border-gray-100" },
+                                React.createElement('h4', { className: "font-bold text-[#006633] mb-4 flex items-center gap-2" },
+                                    React.createElement(BarChart2, { size: 18 }), " Distribuição por Idade"
+                                ),
+                                React.createElement('div', { className: "h-48 w-full" },
+                                    React.createElement(ResponsiveContainer, { width: "100%", height: "100%" },
+                                        React.createElement(RechartsBarChart, { data: activeData.ages, layout: "vertical", margin: { left: 20 } },
+                                            React.createElement(CartesianGrid, { strokeDasharray: "3 3", horizontal: false, stroke: "#e5e7eb" }),
+                                            React.createElement(XAxis, { type: "number", hide: true }),
+                                            React.createElement(YAxis, { dataKey: "name", type: "category", width: 70, tick: {fontSize: 12} }),
+                                            React.createElement(Tooltip, { contentStyle: { borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' } }),
+                                            React.createElement(Bar, { dataKey: "value", radius: [0, 4, 4, 0] },
+                                                activeData.ages.map((entry, index) => 
+                                                    React.createElement(Cell, { key: `cell-${index}`, fill: index % 2 === 0 ? '#006633' : '#D4AF37' })
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            );
+        };
+
+        const ResourcesSection = () => {
+            return React.createElement('section', { id: "manuais", className: "py-16 bg-[#f8fafc]" },
+                React.createElement('div', { className: "container mx-auto px-4" },
+                    React.createElement('div', { className: "text-center mb-12" },
+                        React.createElement('h2', { className: "text-3xl font-bold text-[#006633] mb-4" }, "Recursos e Manuais"),
+                        React.createElement('p', { className: "text-gray-600 max-w-2xl mx-auto" }, 
+                            "Documentação oficial e guias práticos para apoiar nossos coordenadores e voluntários na missão de identificar e conectar jovens brilhantes."
+                        )
+                    ),
+                    React.createElement('div', { className: "grid md:grid-cols-2 gap-8 max-w-5xl mx-auto" },
+                        // Manual do Coordenador
+                        React.createElement('div', { className: "bg-[#006633] text-white rounded-2xl overflow-hidden shadow-xl relative" },
+                            React.createElement('div', { className: "absolute top-0 right-0 p-4 opacity-10" }, React.createElement(Shield, { size: 120 })),
+                            React.createElement('div', { className: "p-8 relative z-10" },
+                                React.createElement('div', { className: "bg-yellow-500 w-12 h-12 rounded-lg flex items-center justify-center mb-6 text-[#006633]" }, React.createElement(Shield, { size: 24 })),
+                                React.createElement('h3', { className: "text-2xl font-bold mb-2 font-serif" }, "Manual do Coordenador"),
+                                React.createElement('p', { className: "text-green-100 mb-6 leading-relaxed" }, "Guia completo para gestão regional, organização de SIGs (Special Interest Groups) e protocolos institucionais da Mensa Brasil."),
+                                React.createElement('ul', { className: "space-y-3 mb-8 text-sm text-green-50" },
+                                    React.createElement('li', { className: "flex items-start gap-2" }, React.createElement(CheckCircle, { size: 16, className: "mt-1 text-yellow-400" }), React.createElement('span', null, "Diretrizes para oficialização de encontros")),
+                                    React.createElement('li', { className: "flex items-start gap-2" }, React.createElement(CheckCircle, { size: 16, className: "mt-1 text-yellow-400" }), React.createElement('span', null, "Processo de submissão de relatórios mensais")),
+                                    React.createElement('li', { className: "flex items-start gap-2" }, React.createElement(CheckCircle, { size: 16, className: "mt-1 text-yellow-400" }), React.createElement('span', null, "Gestão de conflitos e ética na liderança"))
+                                ),
+                                React.createElement('button', { className: "w-full bg-white text-[#006633] font-bold py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-green-50 transition shadow-lg" }, React.createElement(Download, { size: 18 }), " Baixar PDF (v2025.1)")
+                            )
+                        ),
+                        // Manual do Voluntário
+                        React.createElement('div', { className: "bg-white text-gray-800 rounded-2xl overflow-hidden shadow-lg border border-gray-200 relative group" },
+                            React.createElement('div', { className: "absolute top-0 right-0 p-4 opacity-5 text-[#006633] group-hover:opacity-10 transition" }, React.createElement(Heart, { size: 120 })),
+                            React.createElement('div', { className: "p-8 relative z-10" },
+                                React.createElement('div', { className: "bg-green-50 w-12 h-12 rounded-lg flex items-center justify-center mb-6 text-[#006633]" }, React.createElement(Heart, { size: 24 })),
+                                React.createElement('h3', { className: "text-2xl font-bold mb-2 font-serif text-[#006633]" }, "Manual do Voluntário"),
+                                React.createElement('p', { className: "text-gray-600 mb-6 leading-relaxed" }, "Tudo o que você precisa saber para apoiar nossos eventos e programas de mentoria. Junte-se a nós para fazer a diferença."),
+                                React.createElement('ul', { className: "space-y-3 mb-8 text-sm text-gray-600" },
+                                    React.createElement('li', { className: "flex items-start gap-2" }, React.createElement(CheckCircle, { size: 16, className: "mt-1 text-[#006633]" }), React.createElement('span', null, "Código de Conduta e Proteção ao Menor")),
+                                    React.createElement('li', { className: "flex items-start gap-2" }, React.createElement(CheckCircle, { size: 16, className: "mt-1 text-[#006633]" }), React.createElement('span', null, "Checklist para apoio em eventos presenciais")),
+                                    React.createElement('li', { className: "flex items-start gap-2" }, React.createElement(CheckCircle, { size: 16, className: "mt-1 text-[#006633]" }), React.createElement('span', null, "Dicas para acolhimento de novos membros"))
+                                ),
+                                React.createElement('button', { className: "w-full bg-[#006633] text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-green-900 transition shadow-lg" }, React.createElement(Download, { size: 18 }), " Baixar Guia do Voluntário")
+                            )
+                        )
+                    )
+                )
+            );
+        };
+
+        const EventsSection = () => {
+            return React.createElement('section', { id: "eventos", className: "py-16 bg-white" },
+                React.createElement('div', { className: "container mx-auto px-4" },
+                    React.createElement('div', { className: "flex flex-col md:flex-row justify-between items-end mb-10 border-b-2 border-[#006633] pb-4" },
+                        React.createElement('div', null,
+                            React.createElement('h2', { className: "text-3xl font-bold text-[#006633]" }, "Agenda 2026"),
+                            React.createElement('p', { className: "text-gray-600 mt-2" }, "Eventos regionais e nacionais para integração e desenvolvimento.")
+                        ),
+                        React.createElement('div', { className: "mt-4 md:mt-0" },
+                            React.createElement('button', { className: "text-[#006633] font-bold flex items-center gap-2 hover:gap-3 transition-all" }, "Ver calendário completo ", React.createElement(ChevronRight, { size: 20 }))
+                        )
+                    ),
+                    React.createElement('div', { className: "grid md:grid-cols-2 lg:grid-cols-3 gap-6" },
+                        EVENTS_2026.map(evt => 
+                            React.createElement('div', { key: evt.id, className: "group bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-xl transition duration-300" },
+                                React.createElement('div', { className: "bg-[#006633] text-white p-4 flex justify-between items-center" },
+                                    React.createElement('div', { className: "flex flex-col" },
+                                        React.createElement('span', { className: "text-xs uppercase opacity-80" }, evt.region),
+                                        React.createElement('span', { className: "font-bold text-lg" }, new Date(evt.date).toLocaleDateString('pt-BR', { month: 'short', day: 'numeric' }))
+                                    ),
+                                    React.createElement(Calendar, { className: "opacity-50 group-hover:opacity-100 transition" })
+                                ),
+                                React.createElement('div', { className: "p-6" },
+                                    React.createElement('span', { className: `text-xs font-bold px-2 py-1 rounded uppercase tracking-wide mb-3 inline-block ${evt.type === 'Presencial' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'}` }, evt.type),
+                                    React.createElement('h3', { className: "text-xl font-bold text-gray-800 mb-2 group-hover:text-[#006633] transition" }, evt.title),
+                                    React.createElement('p', { className: "text-gray-500 text-sm flex items-center gap-2" }, React.createElement(MapPin, { size: 14 }), " ", evt.city),
+                                    React.createElement('div', { className: "mt-6 pt-4 border-t border-gray-100" },
+                                        React.createElement('button', { className: "w-full py-2 text-center border border-[#006633] text-[#006633] rounded font-semibold hover:bg-[#006633] hover:text-white transition" }, "Inscrever-se")
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            );
+        };
+
+        const AboutSection = () => {
+            return React.createElement('section', { id: "sobre", className: "py-16 bg-gray-50" },
+                React.createElement('div', { className: "container mx-auto px-4" },
+                    React.createElement('div', { className: "max-w-4xl mx-auto text-center mb-12" },
+                        React.createElement('h2', { className: "text-3xl font-bold text-[#006633] mb-6" }, "Sobre o Programa"),
+                        React.createElement('p', { className: "text-lg text-gray-700 leading-relaxed" }, "Baseado nas diretrizes da Mensa Internacional e adaptado à realidade brasileira, o programa busca não apenas identificar, mas nutrir o intelecto através de uma rede de apoio robusta.")
+                    ),
+                    React.createElement('div', { className: "grid md:grid-cols-3 gap-8" },
+                        React.createElement('div', { className: "bg-white p-8 rounded-xl shadow-sm text-center" },
+                            React.createElement('div', { className: "w-16 h-16 bg-green-100 text-[#006633] rounded-full flex items-center justify-center mx-auto mb-4" }, React.createElement(Award, { size: 32 })),
+                            React.createElement('h3', { className: "font-bold text-xl mb-2 text-[#006633]" }, "Identificação"),
+                            React.createElement('p', { className: "text-gray-600 text-sm" }, "Testes supervisionados e avaliações psicológicas para identificar altas habilidades e superdotação em diferentes faixas etárias.")
+                        ),
+                        React.createElement('div', { className: "bg-white p-8 rounded-xl shadow-sm text-center" },
+                            React.createElement('div', { className: "w-16 h-16 bg-green-100 text-[#006633] rounded-full flex items-center justify-center mx-auto mb-4" }, React.createElement(Users, { size: 32 })),
+                            React.createElement('h3', { className: "font-bold text-xl mb-2 text-[#006633]" }, "Integração"),
+                            React.createElement('p', { className: "text-gray-600 text-sm" }, "Encontros regionais (SIGs) que permitem a troca de experiências entre jovens com interesses similares, reduzindo o isolamento social.")
+                        ),
+                        React.createElement('div', { className: "bg-white p-8 rounded-xl shadow-sm text-center" },
+                            React.createElement('div', { className: "w-16 h-16 bg-green-100 text-[#006633] rounded-full flex items-center justify-center mx-auto mb-4" }, React.createElement(BookOpen, { size: 32 })),
+                            React.createElement('h3', { className: "font-bold text-xl mb-2 text-[#006633]" }, "Apoio Familiar"),
+                            React.createElement('p', { className: "text-gray-600 text-sm" }, "Suporte e orientação para pais e educadores sobre como lidar com as necessidades educacionais e emocionais específicas.")
+                        )
+                    )
+                )
+            );
+        };
+
+        const Footer = () => {
+            return React.createElement('footer', { className: "bg-[#006633] text-white py-12 border-t border-yellow-500" },
+                React.createElement('div', { className: "container mx-auto px-4" },
+                    React.createElement('div', { className: "grid md:grid-cols-4 gap-8" },
+                        React.createElement('div', { className: "col-span-1 md:col-span-2" },
+                            React.createElement('h2', { className: "text-2xl font-serif font-bold mb-4" }, "Mensa Brasil"),
+                            React.createElement('p', { className: "text-gray-300 text-sm max-w-md leading-relaxed" }, "A Mensa é a High IQ Society, uma organização internacional para pessoas com alto quociente de inteligência. O programa Jovens Brilhantes é uma iniciativa dedicada ao futuro.")
+                        ),
+                        React.createElement('div', null,
+                            React.createElement('h3', { className: "font-bold text-yellow-400 mb-4" }, "Links Rápidos"),
+                            React.createElement('ul', { className: "space-y-2 text-sm text-gray-300" },
+                                React.createElement('li', null, React.createElement('a', { href: "#", className: "hover:text-white transition" }, "Como ingressar")),
+                                React.createElement('li', null, React.createElement('a', { href: "#", className: "hover:text-white transition" }, "Área do Associado")),
+                                React.createElement('li', null, React.createElement('a', { href: "#", className: "hover:text-white transition" }, "Revista Mensa")),
+                                React.createElement('li', null, React.createElement('a', { href: "#", className: "hover:text-white transition" }, "Política de Privacidade"))
+                            )
+                        ),
+                        React.createElement('div', null,
+                            React.createElement('h3', { className: "font-bold text-yellow-400 mb-4" }, "Contato"),
+                            React.createElement('p', { className: "text-gray-300 text-sm mb-2" }, "jovens@mensa.org.br"),
+                            React.createElement('p', { className: "text-gray-300 text-sm" }, "São Paulo, SP - Brasil"),
+                            React.createElement('div', { className: "mt-4 flex gap-4" },
+                                React.createElement('div', { className: "w-8 h-8 bg-white/10 rounded hover:bg-white/20 cursor-pointer" }),
+                                React.createElement('div', { className: "w-8 h-8 bg-white/10 rounded hover:bg-white/20 cursor-pointer" }),
+                                React.createElement('div', { className: "w-8 h-8 bg-white/10 rounded hover:bg-white/20 cursor-pointer" })
+                            )
+                        )
+                    ),
+                    React.createElement('div', { className: "mt-12 pt-8 border-t border-white/10 text-center text-xs text-gray-400" }, "© 2025 Mensa Brasil. Todos os direitos reservados. Design inspirado no padrão oficial.")
+                )
+            );
+        };
+
+        const App = () => {
+            return React.createElement('div', { className: "min-h-screen bg-white font-sans text-gray-800 scroll-smooth" },
+                React.createElement(Header),
+                React.createElement(Hero),
+                React.createElement(AboutSection),
+                React.createElement(InteractiveDashboard),
+                React.createElement(ResourcesSection),
+                React.createElement(EventsSection),
+                React.createElement(Footer)
+            );
+        };
+
+        // Renderizando o App
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(App));
+    </script>
+</body>
+</html>
   BookOpen, 
   MapPin,
   Menu,
